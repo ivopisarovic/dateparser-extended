@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='dateparser_extended',
-    version='0.0.1',
+    version='0.0.2',
     description='Built on Python dateparser library by Scrapinghub, extending it with range detection and fixing Czech '
                 'dates recognition.',
     url='https://github.com/ivopisarovic/dateparser-extended',
