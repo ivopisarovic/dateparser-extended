@@ -46,7 +46,7 @@ class ExtendedDateParserTest(unittest.TestCase):
         self.assertEqual(dates[0]['start'], 14)
         self.assertEqual(dates[0]['end'], 20)
         self.assertEqual(dates[0]['value'], 'neděle')
-        sunday = [now + timedelta(i) for i in range(0, 6) if ((now + timedelta(i)).weekday() == 6)][0]
+        sunday = [now + timedelta(i) for i in range(0, 7) if ((now + timedelta(i)).weekday() == 6)][0]
         self.assertEqual(dates[0]['parsed_date'], sunday.date())
 
         self.assertEqual(dates[1]['start'], 24)
@@ -99,6 +99,45 @@ class ExtendedDateParserTest(unittest.TestCase):
         self.assertEqual(dates[0]['range'], 'end')
         self.assertIn('range', dates[1])
         self.assertEqual(dates[1]['range'], 'start')
+
+    def test_find_date_next_week(self):
+        now = datetime.now()
+        wednesday = [now + timedelta(i) for i in range(0, 7) if ((now + timedelta(i)).weekday() == 2)][0].date()
+        next_wednesday = [wednesday + timedelta(i) for i in range(1, 8) if ((wednesday + timedelta(i)).weekday() == 2)][0]
+        next_friday = [wednesday + timedelta(i) for i in range(1, 8) if ((wednesday + timedelta(i)).weekday() == 4)][0]
+
+        text = "od středy do další středy"
+        dates = self.parser.search_dates(text)
+
+        self.assertEqual(dates[0]['parsed_date'], wednesday)
+        self.assertIn('range', dates[0])
+        self.assertEqual(dates[0]['range'], 'start')
+
+        self.assertEqual(dates[1]['parsed_date'], next_wednesday)
+        self.assertIn('range', dates[1])
+        self.assertEqual(dates[1]['range'], 'end')
+
+        text = "od středy do pátku"
+        dates = self.parser.search_dates(text)
+
+        self.assertEqual(dates[0]['parsed_date'], wednesday)
+        self.assertIn('range', dates[0])
+        self.assertEqual(dates[0]['range'], 'start')
+
+        self.assertEqual(dates[1]['parsed_date'], next_friday)
+        self.assertIn('range', dates[1])
+        self.assertEqual(dates[1]['range'], 'end')
+
+        text = "od středy do dalšího pátku"
+        dates = self.parser.search_dates(text)
+
+        self.assertEqual(dates[0]['parsed_date'], wednesday)
+        self.assertIn('range', dates[0])
+        self.assertEqual(dates[0]['range'], 'start')
+
+        self.assertEqual(dates[1]['parsed_date'], next_friday)
+        self.assertIn('range', dates[1])
+        self.assertEqual(dates[1]['range'], 'end')
 
 
 if __name__ == '__main__':

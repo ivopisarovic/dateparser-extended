@@ -52,17 +52,19 @@ class ExtendedDateParser:
 
         # Convert the found dates to the result objects
         dates = []
+        index = 0
 
         for substr, timestamp in hits:
-            for match in re.finditer(substr, sanitized_text):
-                dates.append(
-                    {
-                        'start': match.start(),
-                        'end': match.end(),
-                        'value': sanitized_text[match.start():match.end()],
-                        "parsed_date": timestamp.date(),
-                    }
-                )
+            start = index + sanitized_text[index:].find(substr)
+            index = start + len(substr)
+            dates.append(
+                {
+                    'start': start,
+                    'end': start + len(substr),
+                    'value': sanitized_text[start:start + len(substr)],
+                    "parsed_date": timestamp.date(),
+                }
+            )
 
         self._detect_date_range(dates, sanitized_text)
 
@@ -105,17 +107,22 @@ class ExtendedDateParser:
         start_keywords = '\\b(od|začátek|začínající|začátkem)\\b'
         end_keywords = '\\b(do|až|konec|končící|koncem)\\b|\\-|–|—'
 
-        for date in dates:
-            previous_text = text[0:date['start']]
-            following_text = text[date['end']:]
+        for i, date in enumerate(dates):
+            # Get the text preceding and following the extracted date.
+            # Use only text till the first other date. The previous and following texts end where another date occurs.
+            # E.g. "12th April to the end of April" -> "to the end of" id the previous text for date "April".
+            previous_text_start = 0 if i == 0 else dates[i - 1]['end']
+            previous_text = text[previous_text_start:date['start']]
+            following_text_end = None if i == len(dates) - 1 else dates[i + 1]['start']
+            following_text = text[date['end']:following_text_end]
 
             # if some keywords appear before or after the extracted date, then it is the start of the range
             if (
-                    re.search(r'(' + start_keywords + ')\s*$', previous_text) or
+                    re.search(r'(' + start_keywords + ')(\s+\w+)?\s*$', previous_text) or
                     re.search(r'^\s*(' + end_keywords + ')', following_text)
             ):
                 date['range'] = 'start'
 
             # if some keywords appear before the extracted date, then it is the end of the range
-            elif re.search(r'(' + end_keywords + ')\s*$', previous_text):
+            elif re.search(r'(' + end_keywords + ')(\s+\w+)?\s*$', previous_text):
                 date['range'] = 'end'
